@@ -17,6 +17,16 @@ const ReportsPage = () => {
     return (summary.income || 0) - (summary.expense || 0);
   }, [summary]);
 
+  const savingsPercentage = useMemo(() => {
+    if (summary.income === 0) return 0;
+    return Math.round((netSavings / summary.income) * 100);
+  }, [netSavings, summary.income]);
+
+  const expensePercentage = useMemo(() => {
+    if (summary.income === 0) return 0;
+    return Math.round((summary.expense / summary.income) * 100);
+  }, [summary.expense, summary.income]);
+
   useEffect(() => {
     let isMounted = true;
     getTransactionSummary()
@@ -70,14 +80,11 @@ const ReportsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Comparison Summary Card */}
                 <div
-                    className="bg-surface-container-lowest p-8 rounded-[2rem] shadow-[0px_12px_32px_rgba(43,52,55,0.04)] flex flex-col justify-between overflow-hidden relative group">
-                    <div
-                        className="absolute -right-4 -top-4 w-32 h-32 bg-primary/5 rounded-full group-hover:scale-110 transition-transform duration-500">
-                    </div>
+                    className="bg-surface-container-lowest p-8 rounded-[2rem] shadow-[0px_12px_32px_rgba(43,52,55,0.04)] flex flex-col justify-between overflow-hidden">
                     <div>
                         <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Net
                             Savings</span>
-                        <p className="text-4xl font-headline font-extrabold text-primary mt-2">
+                        <p className="text-3xl font-headline font-extrabold text-primary mt-2">
                           {formatCurrency.format(netSavings)}
                         </p>
                     </div>
@@ -85,9 +92,13 @@ const ReportsPage = () => {
                         <div className="flex items-center gap-2 text-tertiary font-bold text-sm">
                             <span className="material-symbols-outlined text-[18px]"
                                 data-icon="trending_up">trending_up</span>
-                            +12.5% vs last month
+                            {savingsPercentage}% of income saved
                         </div>
-                        <p className="text-xs text-on-surface-variant mt-1">Excellent! You saved $1,240 more than October.
+                        <p className="text-xs text-on-surface-variant mt-1">
+                          {netSavings > 0
+                            ? `You're saving ${formatCurrency.format(netSavings)} this month.`
+                            : `You're spending ${formatCurrency.format(Math.abs(netSavings))} more than earning.`
+                          }
                         </p>
                     </div>
                 </div>
@@ -96,17 +107,17 @@ const ReportsPage = () => {
                     <div>
                         <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Total
                             Income</span>
-                        <p className="text-4xl font-headline font-extrabold text-on-background mt-2">
+                        <p className="text-3xl font-headline font-extrabold text-on-background mt-2">
                           {formatCurrency.format(summary.income || 0)}
                         </p>
                     </div>
                     <div className="mt-8 space-y-2">
                         <div className="flex justify-between text-xs font-bold">
-                            <span className="text-on-surface-variant">Goal Progress</span>
-                            <span className="text-primary">94%</span>
+                            <span className="text-on-surface-variant">Income Status</span>
+                            <span className="text-primary">{expensePercentage}% spent</span>
                         </div>
                         <div className="h-2 w-full bg-primary-container rounded-full overflow-hidden">
-                            <div className="h-full bg-primary w-[94%]"></div>
+                            <div className="h-full bg-primary" style={{ width: `${Math.min(expensePercentage, 100)}%` }}></div>
                         </div>
                     </div>
                 </div>
@@ -115,7 +126,7 @@ const ReportsPage = () => {
                     <div>
                         <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Total
                             Expenses</span>
-                        <p className="text-4xl font-headline font-extrabold text-error mt-2">
+                        <p className="text-3xl font-headline font-extrabold text-error mt-2">
                           {formatCurrency.format(summary.expense || 0)}
                         </p>
                     </div>
@@ -123,10 +134,15 @@ const ReportsPage = () => {
                         <div className="flex items-center gap-2 text-error font-bold text-sm">
                             <span className="material-symbols-outlined text-[18px]"
                                 data-icon="trending_down">trending_down</span>
-                            -4.2% reduction
+                            {expensePercentage}% of income
                         </div>
-                        <p className="text-xs text-on-surface-variant mt-1">Consistent reduction in food &amp; leisure
-                            costs.</p>
+                        <p className="text-xs text-on-surface-variant mt-1">
+                          {expensePercentage > 80
+                            ? 'High spending detected. Review your expenses.'
+                            : expensePercentage > 60
+                              ? 'Moderate spending. Stay on track.'
+                              : 'Great spending control!'}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -206,7 +222,7 @@ const ReportsPage = () => {
                                     strokeDasharray="31.2 251.2" strokeDashoffset="-220" strokeWidth="12"></circle>
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-2xl font-headline font-extrabold">
+                                <span className="text-sm font-headline font-extrabold">
                                   {formatCurrency.format(summary.expense || 0)}
                                 </span>
                                 <span className="text-[10px] uppercase font-bold text-on-surface-variant">Spent</span>

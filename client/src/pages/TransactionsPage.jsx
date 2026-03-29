@@ -311,7 +311,7 @@ const TransactionsPage = () => {
                             <th className="px-8 py-5">Date</th>
                             <th className="px-4 py-5">Description</th>
                             <th className="px-4 py-5">Category</th>
-                            <th className="px-4 py-5">Status</th>
+                            {/* <th className="px-4 py-5">Status</th> */}
                             <th className="px-8 py-5 text-right">Amount</th>
                         </tr>
                     </thead>
@@ -374,12 +374,6 @@ const TransactionsPage = () => {
                               >
                                 {transaction.category}
                               </span>
-                            </td>
-                            <td className="px-4 py-6">
-                              <div className="flex items-center gap-2 text-primary">
-                                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                                <span className="text-xs font-semibold">Completed</span>
-                              </div>
                             </td>
                             <td className="px-8 py-6 text-right">
                               <span
