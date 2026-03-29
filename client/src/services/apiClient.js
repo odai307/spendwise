@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const DEBUG_API = import.meta.env.DEV || import.meta.env.VITE_DEBUG_API === 'true';
+
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   headers: {
@@ -9,8 +11,23 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (DEBUG_API) {
+      const method = (response.config?.method || 'GET').toUpperCase();
+      const fullUrl = `${response.config?.baseURL || ''}${response.config?.url || ''}`;
+      console.info('[API][RESPONSE]', method, fullUrl, response.status);
+    }
+    return response;
+  },
   (error) => {
+    if (DEBUG_API) {
+      const method = (error.config?.method || 'GET').toUpperCase();
+      const fullUrl = `${error.config?.baseURL || ''}${error.config?.url || ''}`;
+      const status = error.response?.status || 'NO_STATUS';
+      const responseData = error.response?.data || null;
+      console.error('[API][ERROR]', method, fullUrl, status, responseData);
+    }
+
     const message =
       error?.response?.data?.message ||
       error?.message ||
@@ -24,6 +41,13 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (DEBUG_API) {
+    const method = (config.method || 'GET').toUpperCase();
+    const fullUrl = `${config.baseURL || ''}${config.url || ''}`;
+    console.info('[API][REQUEST]', method, fullUrl);
+  }
+
   return config;
 });
 

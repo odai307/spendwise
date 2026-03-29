@@ -17,6 +17,7 @@ const AuthPage = () => {
     confirmPassword: '',
   });
   const [status, setStatus] = useState({ loading: false, error: '' });
+  const DEBUG_AUTH = import.meta.env.DEV || import.meta.env.VITE_DEBUG_API === 'true';
 
   const submitLabel = useMemo(() => (isSignup ? 'Create Account' : 'Sign In'), [isSignup]);
 
@@ -34,6 +35,13 @@ const AuthPage = () => {
     }
 
     setStatus({ loading: true, error: '' });
+    if (DEBUG_AUTH) {
+      console.info('[AUTH][SUBMIT]', {
+        mode: isSignup ? 'signup' : 'login',
+        email: formState.email,
+        apiBaseUrl: import.meta.env.VITE_API_URL || '(missing)',
+      });
+    }
 
     try {
       const payload = isSignup
@@ -50,9 +58,22 @@ const AuthPage = () => {
           };
 
       const response = isSignup ? await registerUser(payload) : await loginUser(payload);
+      if (DEBUG_AUTH) {
+        console.info('[AUTH][SUCCESS]', {
+          mode: isSignup ? 'signup' : 'login',
+          hasToken: Boolean(response?.token),
+          hasUser: Boolean(response?.user),
+        });
+      }
       login({ token: response.token, user: response.user });
       navigate('/dashboard', { replace: true });
     } catch (error) {
+      if (DEBUG_AUTH) {
+        console.error('[AUTH][FAILURE]', {
+          mode: isSignup ? 'signup' : 'login',
+          message: error?.message || 'Unknown auth error',
+        });
+      }
       setFormState((prev) => ({
         ...prev,
         password: '',
