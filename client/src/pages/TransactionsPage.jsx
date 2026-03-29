@@ -18,6 +18,7 @@ const TransactionsPage = () => {
   const [summary, setSummary] = useState({ income: 0, expense: 0 });
   const [categories, setCategories] = useState({ income: [], expense: [] });
   const [filters, setFilters] = useState({ type: 'all', category: 'all' });
+  const [dateFilter, setDateFilter] = useState('today');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const toLocalDate = (date) => {
@@ -54,7 +55,55 @@ const TransactionsPage = () => {
     return Array.from(new Set([...categories.expense, ...categories.income]));
   }, [categories]);
 
-  const fetchTransactions = async (page = pagination.page, limit = pagination.limit, search = searchTerm) => {
+  const getDateRangeFromPreset = (preset) => {
+    const now = new Date();
+    const startOfDay = (date) => {
+      const value = new Date(date);
+      value.setHours(0, 0, 0, 0);
+      return value;
+    };
+    const endOfDay = (date) => {
+      const value = new Date(date);
+      value.setHours(23, 59, 59, 999);
+      return value;
+    };
+
+    if (preset === 'today') {
+      return { from: startOfDay(now), to: endOfDay(now) };
+    }
+
+    if (preset === '7d') {
+      const from = new Date(now);
+      from.setDate(from.getDate() - 6);
+      return { from: startOfDay(from), to: endOfDay(now) };
+    }
+
+    if (preset === '30d') {
+      const from = new Date(now);
+      from.setDate(from.getDate() - 29);
+      return { from: startOfDay(from), to: endOfDay(now) };
+    }
+
+    if (preset === 'quarter') {
+      const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
+      const from = new Date(now.getFullYear(), quarterStartMonth, 1);
+      return { from: startOfDay(from), to: endOfDay(now) };
+    }
+
+    if (preset === 'ytd') {
+      const from = new Date(now.getFullYear(), 0, 1);
+      return { from: startOfDay(from), to: endOfDay(now) };
+    }
+
+    return null;
+  };
+
+  const fetchTransactions = async (
+    page = pagination.page,
+    limit = pagination.limit,
+    search = searchTerm,
+    datePreset = dateFilter
+  ) => {
     setLoading(true);
     setError('');
     try {
@@ -65,6 +114,11 @@ const TransactionsPage = () => {
       if (filters.type !== 'all') params.type = filters.type;
       if (filters.category !== 'all') params.category = filters.category;
       if (search && search.trim()) params.search = search.trim();
+      const dateRange = getDateRangeFromPreset(datePreset);
+      if (dateRange?.from && dateRange?.to) {
+        params.from = dateRange.from.toISOString();
+        params.to = dateRange.to.toISOString();
+      }
 
       const response = await listTransactions(params);
       setTransactions(response.data || []);
@@ -108,7 +162,7 @@ const TransactionsPage = () => {
 
   useEffect(() => {
     fetchTransactions(1, pagination.limit);
-  }, [filters]);
+  }, [filters, dateFilter]);
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -275,13 +329,17 @@ const TransactionsPage = () => {
                 <div
                     className="flex items-center gap-2 bg-surface-container-lowest rounded-2xl px-4 py-2 flex-1 min-w-[200px]">
                     <span className="material-symbols-outlined text-on-surface-variant text-lg">calendar_today</span>
-                    <select className="bg-transparent border-none text-sm font-medium focus:ring-0 w-full cursor-pointer">
-                        <option>Today</option>
-                        <option>Last 7 Days</option>
-                        <option>Last 30 Days</option>
-                        <option>This Quarter</option>
-                        <option>Year to Date</option>
-                        <option>Custom Range</option>
+                    <select
+                      className="bg-transparent border-none text-sm font-medium focus:ring-0 w-full cursor-pointer"
+                      value={dateFilter}
+                      onChange={(event) => setDateFilter(event.target.value)}
+                    >
+                        <option value="today">Today</option>
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                        <option value="quarter">This Quarter</option>
+                        <option value="ytd">Year to Date</option>
+                        <option value="custom">Custom Range</option>
                     </select>
                 </div>
                 <div
@@ -318,21 +376,21 @@ const TransactionsPage = () => {
                     <tbody className="divide-y divide-slate-100/50">
                       {loading && (
                         <tr>
-                          <td className="px-8 py-10 text-sm text-on-surface-variant" colSpan={5}>
+                          <td className="px-8 py-10 text-sm text-on-surface-variant" colSpan={4}>
                             Loading transactions...
                           </td>
                         </tr>
                       )}
                       {!loading && error && (
                         <tr>
-                          <td className="px-8 py-10 text-sm text-error" colSpan={5}>
+                          <td className="px-8 py-10 text-sm text-error" colSpan={4}>
                             {error}
                           </td>
                         </tr>
                       )}
                       {!loading && !error && transactions.length === 0 && (
                         <tr>
-                          <td className="px-8 py-10 text-sm text-on-surface-variant" colSpan={5}>
+                          <td className="px-8 py-10 text-sm text-on-surface-variant" colSpan={4}>
                             No transactions yet. Add your first one to get started.
                           </td>
                         </tr>
